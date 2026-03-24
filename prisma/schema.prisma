@@ -1,0 +1,233 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model AdminUser {
+  id                  String             @id @default(cuid())
+  username            String             @unique
+  email               String             @unique
+  displayName         String?
+  passwordHash        String
+  role                Role               @default(ADMIN)
+  status              AdminStatus        @default(ACTIVE)
+  failedLoginAttempts Int                @default(0)
+  lastFailedLoginAt   DateTime?
+  lockUntil           DateTime?
+  mustChangePassword  Boolean            @default(false)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  passwordResetOtps   PasswordResetOtp[]
+
+  @@index([email, username])
+}
+
+model PasswordResetOtp {
+  id           String    @id @default(cuid())
+  userId       String
+  codeHash     String
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  attemptCount Int       @default(0)
+  lastSentAt   DateTime
+  createdAt    DateTime  @default(now())
+  user         AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model SiteSetting {
+  id                   String   @id
+  brandName            String
+  brandShortName       String
+  slogan               String
+  heroTitle            String
+  heroDescription      String
+  heroBadge            String
+  introTitle           String
+  introDescription     String
+  aboutTitle           String
+  aboutDescription     String
+  courseFormUrl        String
+  merchFormUrl         String
+  facebookUrl          String
+  zaloPhone            String
+  contactEmail         String
+  address              String?
+  footerText           String
+  seoTitle             String
+  seoDescription       String
+  youtubeChannelUrl    String?
+  studentsCountLabel   String
+  videosCountLabel     String
+  coursesCountLabel    String
+  merchCountLabel      String
+  showFeaturedVideos   Boolean  @default(true)
+  showFeaturedCourses  Boolean  @default(true)
+  showFeaturedProducts Boolean  @default(true)
+  showTestimonials     Boolean  @default(true)
+  showFaq              Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model Course {
+  id                 String        @id @default(cuid())
+  title              String
+  slug               String        @unique
+  category           String
+  level              String
+  format             String
+  shortDescription   String
+  longDescription    String
+  targetAudience     String?
+  outline            String?
+  featuredPoints     String[]      @default([])
+  priceLabel         String
+  originalPriceLabel String?
+  durationLabel      String?
+  status             CatalogStatus @default(PUBLISHED)
+  featured           Boolean       @default(false)
+  sortOrder          Int           @default(0)
+  coverImageUrl      String?
+  coverImageAlt      String?
+  ctaUrlOverride     String?
+  tags               String[]      @default([])
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([featured, sortOrder])
+  @@index([category, status])
+}
+
+model Product {
+  id                 String             @id @default(cuid())
+  title              String
+  slug               String             @unique
+  category           String
+  shortDescription   String
+  longDescription    String
+  material           String?
+  variantText        String?
+  price              Decimal            @db.Decimal(10, 2)
+  compareAtPrice     Decimal?           @db.Decimal(10, 2)
+  availabilityStatus AvailabilityStatus @default(IN_STOCK)
+  featured           Boolean            @default(false)
+  sortOrder          Int                @default(0)
+  coverImageUrl      String?
+  coverImageAlt      String?
+  galleryUrls        String[]           @default([])
+  ctaUrlOverride     String?
+  tags               String[]           @default([])
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([featured, sortOrder])
+  @@index([category, availabilityStatus])
+}
+
+model Video {
+  id               String   @id @default(cuid())
+  title            String
+  slug             String   @unique
+  youtubeUrl       String
+  youtubeId        String
+  shortDescription String
+  thumbnailUrl     String
+  durationLabel    String?
+  featured         Boolean  @default(false)
+  sortOrder        Int      @default(0)
+  tags             String[] @default([])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([featured, sortOrder])
+}
+
+model Testimonial {
+  id          String   @id @default(cuid())
+  name        String
+  roleLabel   String
+  quote       String
+  courseLabel String?
+  avatarUrl   String?
+  featured    Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([featured, sortOrder])
+}
+
+model Faq {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  category  String
+  featured  Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([featured, sortOrder])
+}
+
+model MediaAsset {
+  id        String   @id @default(cuid())
+  secureUrl String
+  publicId  String   @unique
+  alt       String?
+  width     Int?
+  height    Int?
+  format    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CtaClickEvent {
+  id          String        @id @default(cuid())
+  targetType  CtaTargetType
+  targetId    String?
+  targetLabel String?
+  targetUrl   String
+  source      String?
+  referrer    String?
+  createdAt   DateTime      @default(now())
+
+  @@index([targetType, createdAt])
+  @@index([source, createdAt])
+}
+
+enum Role {
+  ADMIN
+}
+
+enum AdminStatus {
+  ACTIVE
+  LOCKED
+  DISABLED
+}
+
+enum CatalogStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AvailabilityStatus {
+  IN_STOCK
+  LIMITED
+  SOLD_OUT
+}
+
+enum CtaTargetType {
+  HERO
+  COURSE
+  PRODUCT
+  VIDEO
+  CONTACT
+}

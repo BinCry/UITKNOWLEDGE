@@ -1,7 +1,10 @@
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { ADMIN_PATH_PREFIX, CHANGE_PASSWORD_PATH, LOGIN_PATH } from "@/lib/constants";
+
+const ADMIN_PATH_PREFIX = "/admin";
+const CHANGE_PASSWORD_PATH = "/change-password";
+const LOGIN_PATH = "/login";
 
 const isProtectedPath = (pathname: string) =>
   pathname.startsWith(ADMIN_PATH_PREFIX) || pathname.startsWith(CHANGE_PASSWORD_PATH);

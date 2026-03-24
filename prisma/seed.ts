@@ -25,23 +25,18 @@ const extractYoutubeId = (url: string) => {
   }
 };
 
-async function main() {
+async function seedAdmin() {
+  const existingAdmin = await prisma.adminUser.findUnique({
+    where: { email: DEFAULT_ADMIN_EMAIL },
+    select: { id: true },
+  });
+
+  if (existingAdmin) return;
+
   const passwordHash = await hashPassword(DEFAULT_ADMIN_PASSWORD);
 
-  await prisma.adminUser.upsert({
-    where: { email: DEFAULT_ADMIN_EMAIL },
-    update: {
-      username: DEFAULT_ADMIN_USERNAME,
-      displayName: process.env.SEED_ADMIN_DISPLAY_NAME ?? "Phan Trong Dinh",
-      passwordHash,
-      role: "ADMIN",
-      status: AdminStatus.ACTIVE,
-      failedLoginAttempts: 0,
-      lastFailedLoginAt: null,
-      lockUntil: null,
-      mustChangePassword: true,
-    },
-    create: {
+  await prisma.adminUser.create({
+    data: {
       username: DEFAULT_ADMIN_USERNAME,
       email: DEFAULT_ADMIN_EMAIL,
       displayName: process.env.SEED_ADMIN_DISPLAY_NAME ?? "Phan Trong Dinh",
@@ -51,25 +46,44 @@ async function main() {
       mustChangePassword: true,
     },
   });
+}
 
-  await prisma.siteSetting.upsert({
+async function seedSiteSettings() {
+  const existingSettings = await prisma.siteSetting.findUnique({
     where: { id: SITE_SETTINGS_ID },
-    update: siteContent,
-    create: {
+    select: { id: true },
+  });
+
+  if (existingSettings) return;
+
+  await prisma.siteSetting.create({
+    data: {
       id: SITE_SETTINGS_ID,
       ...siteContent,
       courseFormUrl: siteContent.courseFormUrl || COURSE_FORM_FALLBACK,
       merchFormUrl: siteContent.merchFormUrl || MERCH_FORM_FALLBACK,
     },
   });
+}
 
-  await prisma.course.deleteMany({ where: { slug: { in: demoCourses.map((item) => item.slug) } } });
+async function seedCourses() {
+  const existingCount = await prisma.course.count();
+  if (existingCount > 0) return;
+
   await prisma.course.createMany({ data: demoCourses });
+}
 
-  await prisma.product.deleteMany({ where: { slug: { in: demoProducts.map((item) => item.slug) } } });
+async function seedProducts() {
+  const existingCount = await prisma.product.count();
+  if (existingCount > 0) return;
+
   await prisma.product.createMany({ data: demoProducts });
+}
 
-  await prisma.video.deleteMany({ where: { slug: { in: demoVideos.map((item) => item.slug) } } });
+async function seedVideos() {
+  const existingCount = await prisma.video.count();
+  if (existingCount > 0) return;
+
   for (const video of demoVideos) {
     const youtubeId = extractYoutubeId(video.youtubeUrl);
     await prisma.video.create({
@@ -80,12 +94,30 @@ async function main() {
       },
     });
   }
+}
 
-  await prisma.testimonial.deleteMany({ where: { name: { in: demoTestimonials.map((item) => item.name) } } });
+async function seedTestimonials() {
+  const existingCount = await prisma.testimonial.count();
+  if (existingCount > 0) return;
+
   await prisma.testimonial.createMany({ data: demoTestimonials });
+}
 
-  await prisma.faq.deleteMany({ where: { question: { in: demoFaqs.map((item) => item.question) } } });
+async function seedFaqs() {
+  const existingCount = await prisma.faq.count();
+  if (existingCount > 0) return;
+
   await prisma.faq.createMany({ data: demoFaqs });
+}
+
+async function main() {
+  await seedAdmin();
+  await seedSiteSettings();
+  await seedCourses();
+  await seedProducts();
+  await seedVideos();
+  await seedTestimonials();
+  await seedFaqs();
 }
 
 main()
